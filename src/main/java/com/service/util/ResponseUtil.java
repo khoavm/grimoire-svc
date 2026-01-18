@@ -20,9 +20,6 @@ public class ResponseUtil {
         return new ApiResponse<T>(data, "", HttpStatus.OK);
     }
 
-    public <T extends Serializable> ApiResponse<T> created(T data) {
-        return new ApiResponse<T>(data, "", HttpStatus.CREATED);
-    }
 
 
 

@@ -14,6 +14,46 @@ java {
 	}
 }
 
+tasks.named('test') {
+	useJUnitPlatform {
+		excludeTags 'live'
+	}
+
+	// Tùy chọn: Hiển thị log rõ ràng hơn khi chạy test
+	testLogging {
+		events "passed", "skipped", "failed"
+	}
+}
+
+tasks.register('liveTest', Test) {
+	description = 'Runs integration tests that call real 3rd party APIs.'
+	group = 'verification'
+
+	// --- BẮT BUỘC PHẢI CÓ 2 DÒNG NÀY ---
+	// Chỉ định vị trí file .class của test
+	testClassesDirs = sourceSets.test.output.classesDirs
+	// Chỉ định các thư viện cần thiết (classpath)
+	classpath = sourceSets.test.runtimeClasspath
+	// ------------------------------------
+
+
+	useJUnitPlatform {
+		includeTags 'live'
+	}
+
+	// Luôn chạy lại task này (không cache)
+	outputs.upToDateWhen { false }
+
+	testLogging {
+		events "passed", "skipped", "failed"
+		showStandardStreams = true
+	}
+
+	// Nếu bạn muốn chạy liveTest thì phải chắc chắn code đã compile xong
+	dependsOn 'testClasses'
+}
+
+
 configurations {
 	compileOnly {
 		extendsFrom annotationProcessor

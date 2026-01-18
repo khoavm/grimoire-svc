@@ -28,40 +28,52 @@ public class GeminiAiService implements AiService {
     }
 
     public GradingResult fallbackEvaluateAnswer(String questTitle, String questDescription, String userAnswer, Throwable t) {
-        log.warn("Circuit Breaker triggered or Exception caught: {}. Switching to FALLBACK model: {}", t.getMessage(), fallbackModel);
+        try{
+            log.warn("Circuit Breaker triggered or Exception caught: {}. Switching to FALLBACK model: {}", t.getMessage(), fallbackModel);
 
-        GoogleGenAiChatOptions fallbackOptions = GoogleGenAiChatOptions.builder()
-                .model(fallbackModel)
-                .build();
+            GoogleGenAiChatOptions fallbackOptions = GoogleGenAiChatOptions.builder()
+                    .model(fallbackModel)
+                    .build();
 
-        return callAiService(questTitle, questDescription, userAnswer, fallbackOptions);
+            return callAiService(questTitle, questDescription, userAnswer, fallbackOptions);
+        }catch (Exception e){
+            log.error("fallbackEvaluateAnswer failed {}", e.getMessage());
+            throw e;
+        }
+
     }
 
     private GradingResult callAiService(String questTitle, String questDescription, String userAnswer, GoogleGenAiChatOptions options) {
-        String systemText = """
+        try{
+            String systemText = """
                 Role: Strict academic grader.
                 Rule: Score > 90% implies isCorrect=true.
                 Output: JSON.
                 """;
 
-        String userText = """
+            String userText = """
                 Question: {quest_title}
                 Description: {quest_description}
                 Answer: {user_answer}
                 """;
 
-        var request = chatClient.prompt()
-                .system(systemText)
-                .user(u -> u.text(userText)
-                        .param("quest_title", questTitle)
-                        .param("quest_description", questDescription)
-                        .param("user_answer", userAnswer)
-                );
+            var request = chatClient.prompt()
+                    .system(systemText)
+                    .user(u -> u.text(userText)
+                            .param("quest_title", questTitle)
+                            .param("quest_description", questDescription)
+                            .param("user_answer", userAnswer)
+                    );
 
-        if (options != null) {
-            request.options(options);
+            if (options != null) {
+                request.options(options);
+            }
+
+            return request.call().entity(GradingResult.class);
+        }catch (Exception e){
+            log.error("callAiService failed {}", e.getMessage());
+            throw e;
         }
 
-        return request.call().entity(GradingResult.class);
     }
 }

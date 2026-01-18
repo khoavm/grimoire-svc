@@ -50,13 +50,6 @@ The application can be configured using the following environment variables.
 | `GEMINI_API_KEY` | **Required.** Google Gemini API Key | - |
 
 
-### Circuit Breaker (Resilience4j)
-
-The application uses Resilience4j for the `geminiGrading` instance.
-- **Failure Threshold:** 50%
-- **Sliding Window:** 4 calls
-- **Wait Duration:** 1 hour (Open State)
-
 ## 🏃‍♂️ Running with Docker (Recommended)
 
 You don't need to install Java 25 on your machine to run this project. Docker handles everything.
