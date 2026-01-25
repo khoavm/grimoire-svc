@@ -12,12 +12,16 @@ import java.io.Serializable;
 @Component
 public class ResponseUtil {
 
-    public <T extends Serializable> ApiResponse<T> response(T data, String message, HttpStatusCode statusCode) {
+    public <T> ApiResponse<T> response(T data, String message, HttpStatusCode statusCode) {
         return new ApiResponse<T>(data, message, statusCode);
     }
 
-    public <T extends Serializable> ApiResponse<T> ok(T data) {
+    public <T> ApiResponse<T> ok(T data) {
         return new ApiResponse<T>(data, "", HttpStatus.OK);
+    }
+
+    public <T> ApiResponse<T> ok() {
+        return new ApiResponse<T>(null, "", HttpStatus.NO_CONTENT);
     }
 
 

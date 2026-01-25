@@ -2,7 +2,7 @@ package com.service.service.impl;
 
 import com.service.configuration.response.handler.err.exception.RestException;
 import com.service.dto.GradingResult;
-import com.service.entity.Quest;
+import com.service.model.Quest;
 import com.service.repository.QuestRepository;
 import com.service.service.AiService;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ public class QuestServiceImplTest {
         // Arrange
         UUID questId = UUID.randomUUID();
         String userAnswer = "My Answer";
-        Quest quest = new Quest(questId, "Title", "Desc", "Type", "Action");
+        Quest quest = new Quest(questId, "Title", "Desc", "Type", "Action", "",new Quest.Reward(10, 100));
         GradingResult expectedResult = new GradingResult(true, 100, "Good", "None");
 
         when(questRepository.findById(questId)).thenReturn(Optional.of(quest));

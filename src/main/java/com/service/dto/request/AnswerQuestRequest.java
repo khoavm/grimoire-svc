@@ -1,4 +1,4 @@
-package com.service.dto;
+package com.service.dto.request;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

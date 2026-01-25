@@ -2,7 +2,7 @@ package com.service.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.service.constant.Constant;
-import com.service.dto.AnswerQuestRequest;
+import com.service.dto.request.AnswerQuestRequest;
 import com.service.dto.GradingResult;
 import com.service.service.QuestService;
 import com.service.util.ResponseUtil;
