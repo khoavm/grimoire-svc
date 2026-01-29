@@ -25,4 +25,6 @@ public class QuestDTO implements Serializable {
     private QuestActionType actionType;
     private String answerHint;
     private RewardDto reward;
+    private QuizContentDTO quizContent;
+
 }

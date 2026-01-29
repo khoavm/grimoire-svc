@@ -36,12 +36,22 @@ spring:
         chat:
           options:
             model: models/gemini-pro-latest
+            response-schema: application/json
 
+
+management:
+  tracing:
+    propagation:
+      type: w3c,b3
+
+springdoc:
+  api-docs:
+    version: openapi_3_0
 
 resilience4j:
   circuitbreaker:
     instances:
-      geminiGrading: # Tên định danh cho instance này
+      geminiResilience: # Tên định danh cho instance này
         registerHealthIndicator: true
         slidingWindowType: COUNT_BASED
         slidingWindowSize: 4 # Chỉ cần xét trên 5 request gần nhất
@@ -59,11 +69,3 @@ resilience4j:
           - org.springframework.web.client.HttpClientErrorException.TooManyRequests
           - org.springframework.web.client.ResourceAccessException
 
-management:
-  tracing:
-    propagation:
-      type: w3c,b3
-
-springdoc:
-  api-docs:
-    version: openapi_3_0

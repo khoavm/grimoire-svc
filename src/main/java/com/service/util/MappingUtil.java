@@ -3,6 +3,7 @@ package com.service.util;
 
 import com.service.constant.QuestActionType;
 import com.service.dto.entity.QuestDTO;
+import com.service.dto.entity.QuizContentDTO;
 import com.service.dto.entity.RewardDto;
 import com.service.dto.request.CreateQuestRequest;
 import com.service.model.Quest;
@@ -29,6 +30,13 @@ public class MappingUtil {
             rewardDto.setGold(src.getReward().getGold());
             dst.setReward(rewardDto);
         }
+        if(src.getQuizContent() != null) {
+            QuizContentDTO quizContentDto = new QuizContentDTO();
+            quizContentDto.setExplanation(src.getQuizContent().getExplanation());
+            quizContentDto.setOptions(src.getQuizContent().getOptions());
+            quizContentDto.setCorrectAnswer(src.getQuizContent().getCorrectAnswer());
+            dst.setQuizContent(quizContentDto);
+        }
         return dst;
     }
     
@@ -46,6 +54,13 @@ public class MappingUtil {
             reward.setExp(src.getReward().getExp());
             reward.setGold(src.getReward().getGold());
             dst.setReward(reward);
+        }
+        if(src.getQuizContent() != null) {
+            Quest.QuizContent quizContent = new Quest.QuizContent();
+            quizContent.setExplanation(src.getQuizContent().getExplanation());
+            quizContent.setOptions(src.getQuizContent().getOptions());
+            quizContent.setCorrectAnswer(src.getQuizContent().getCorrectAnswer());
+            dst.setQuizContent(quizContent);
         }
         return dst;
     }

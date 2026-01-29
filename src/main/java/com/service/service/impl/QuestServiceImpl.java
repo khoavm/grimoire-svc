@@ -1,6 +1,6 @@
 package com.service.service.impl;
 
-import com.service.configuration.response.handler.err.exception.RestException;
+import static com.service.configuration.response.handler.err.exception.RestException.*;
 import com.service.dto.GradingResult;
 import com.service.dto.common.DataList;
 import com.service.dto.entity.QuestDTO;
@@ -9,6 +9,7 @@ import com.service.dto.request.GetQuestListRequest;
 import com.service.dto.request.SuggestQuestRequest;
 import com.service.model.Quest;
 import com.service.repository.QuestRepository;
+import com.service.repository.UserRepository;
 import com.service.repository.specification.QuestSpecification;
 import com.service.service.AiService;
 import com.service.service.QuestService;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -32,19 +34,34 @@ public class QuestServiceImpl implements QuestService {
 
     private final AiService aiService;
     private final QuestRepository questRepository;
+    private final UserRepository userRepository;
     private final MappingUtil m;
 
 
     @Override
     public GradingResult answerQuest(UUID questId, String userAnswer) {
         try {
-            var currentQuest = questRepository.findById(questId).orElseThrow(() -> RestException.NotFound("Not found quest " + questId));
-            return aiService.evaluateAnswer(currentQuest.getTitle(), currentQuest.getDescription(), userAnswer);
+            var currentQuest = questRepository.findById(questId).orElseThrow(() -> NotFound("Not found quest " + questId));
+            var rs = aiService.evaluateAnswer(currentQuest.getTitle(), currentQuest.getDescription(), userAnswer);
+            var isResultWrong = !rs.isCorrect();
+            var reward = currentQuest.getReward();
+            var questNotHaveReward = reward == null;
+            if(isResultWrong || questNotHaveReward) {
+                return rs;
+            }
+            var user = userRepository.findById(currentQuest.getUsrId()).orElseThrow(() -> NotFound("Not found user " + currentQuest.getUsrId()));
+            var questGold = Objects.requireNonNullElse(currentQuest.getReward().getGold(), 0);
+            var questExp = Objects.requireNonNullElse(currentQuest.getReward().getExp(), 0);
+            user.setGold(user.getGold() + questGold);
+            user.setCurrentExp(user.getCurrentExp() + questExp);
+            userRepository.save(user);
+
+            return rs;
+
         } catch (Exception e) {
             log.error("Error in answerQuest {}", e.getMessage());
             throw e;
         }
-
     }
 
     @Override
@@ -98,7 +115,7 @@ public class QuestServiceImpl implements QuestService {
     public void deleteQuest(UUID questId) {
         try {
             if (!questRepository.existsById(questId)) {
-                throw RestException.NotFound("Not found quest " + questId);
+                throw NotFound("Not found quest " + questId);
             }
             questRepository.deleteById(questId);
         } catch (Exception e) {

@@ -1,6 +1,7 @@
 package com.service.dto.request;
 
 import com.service.constant.QuestActionType;
+import com.service.dto.entity.QuizContentDTO;
 import com.service.dto.entity.RewardDto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,4 +19,5 @@ public class CreateQuestRequest implements Serializable {
     private QuestActionType actionType;
     private String answerHint;
     private RewardDto reward;
+    private QuizContentDTO quizContent;
 }

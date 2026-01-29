@@ -1,6 +1,7 @@
 package com.service.service.impl;
 
 import com.service.dto.GradingResult;
+import com.service.dto.entity.QuestDTO;
 import com.service.service.AiService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
@@ -8,7 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -22,40 +26,19 @@ public class GeminiAiService implements AiService {
 
     // Tên "geminiGrading" phải khớp với cấu hình trong yaml
     @Override
-    @CircuitBreaker(name = "geminiGrading", fallbackMethod = "fallbackEvaluateAnswer")
     public GradingResult evaluateAnswer(String questTitle, String questDescription, String userAnswer) {
-        return callAiService(questTitle, questDescription, userAnswer, null);
-    }
-
-    public GradingResult fallbackEvaluateAnswer(String questTitle, String questDescription, String userAnswer, Throwable t) {
-        try{
-            log.warn("Circuit Breaker triggered or Exception caught: {}. Switching to FALLBACK model: {}", t.getMessage(), fallbackModel);
-
-            GoogleGenAiChatOptions fallbackOptions = GoogleGenAiChatOptions.builder()
-                    .model(fallbackModel)
-                    .build();
-
-            return callAiService(questTitle, questDescription, userAnswer, fallbackOptions);
-        }catch (Exception e){
-            log.error("fallbackEvaluateAnswer failed {}", e.getMessage());
-            throw e;
-        }
-
-    }
-
-    private GradingResult callAiService(String questTitle, String questDescription, String userAnswer, GoogleGenAiChatOptions options) {
-        try{
+        try {
             String systemText = """
-                Role: Strict academic grader.
-                Rule: Score > 90% implies isCorrect=true.
-                Output: JSON.
-                """;
+                    Role: Strict academic grader.
+                    Rule: Score > 90% implies isCorrect=true.
+                    Output: A JSON Array of QuestDTO objects.
+                    """;
 
             String userText = """
-                Question: {quest_title}
-                Description: {quest_description}
-                Answer: {user_answer}
-                """;
+                    Question: {quest_title}
+                    Description: {quest_description}
+                    Answer: {user_answer}
+                    """;
 
             var request = chatClient.prompt()
                     .system(systemText)
@@ -65,15 +48,69 @@ public class GeminiAiService implements AiService {
                             .param("user_answer", userAnswer)
                     );
 
-            if (options != null) {
-                request.options(options);
-            }
+            return callAiService(request, new ParameterizedTypeReference<>() {
+            });
+        } catch (Exception e) {
+            log.error("callAiService failed {}", e.getMessage());
+            throw e;
+        }
+    }
 
-            return request.call().entity(GradingResult.class);
-        }catch (Exception e){
+    @Override
+    @CircuitBreaker(name = "geminiResilience", fallbackMethod = "fallbackSuggestQuest")
+    public List<QuestDTO> suggestQuests(String prompt) {
+        try {
+            String systemText = """
+                        Role: Gamified Tutor.
+                        Task: Create 3-5 progressive quests (Easy -> Hard) teaching the user's topic.
+                        Logic for 'actionType':
+                           - quiz: Multiple choice questions.
+                           - input_text: Translation/Summary/Writing.
+                           - voice_record: Pronunciation/Oral explanation.
+                           - file_submission: Coding/Diagrams/Complex creation.
+                        Rules:
+                           - Title/Desc: RPG-themed but educational.
+                           - Rewards: Scale XP/Gold with difficulty.
+                    """;
+            var request = chatClient.prompt()
+                    .user(u -> u.text("Topic: {topic}").param("topic", prompt))
+                    .system(systemText); // Short system prompt
+
+            return callAiService(request, new ParameterizedTypeReference<List<QuestDTO>>() {
+            });
+        } catch (Exception e) {
+            log.error("callAiService failed {}", e.getMessage());
+            throw e;
+        }
+    }
+
+
+
+    @CircuitBreaker(name = "geminiResilience", fallbackMethod = "fallbackCalAiService")
+    private <T> T callAiService(ChatClient.ChatClientRequestSpec request, ParameterizedTypeReference<T> type) {
+        try {
+            return request.call().entity(type);
+        } catch (Exception e) {
             log.error("callAiService failed {}", e.getMessage());
             throw e;
         }
 
     }
+
+    private <T> T fallbackCalAiService(ChatClient.ChatClientRequestSpec request, ParameterizedTypeReference<T> type, Throwable t) {
+        try {
+            log.warn("Circuit Breaker triggered or Exception caught: {}. Switching to FALLBACK model: {}", t.getMessage(), fallbackModel);
+            GoogleGenAiChatOptions fallbackOptions = GoogleGenAiChatOptions.builder()
+                    .model(fallbackModel)
+                    .build();
+            request.options(fallbackOptions);
+            return request.call().entity(type);
+        } catch (Exception e) {
+            log.error("fallbackCalAiService failed {}", e.getMessage());
+            throw e;
+        }
+    }
+
+
+
 }
